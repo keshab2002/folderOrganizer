@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Folder Organization</title>
+</head>
+
+<body>
+    <input type="file" id="fileInput" multiple>
+    <button onclick="uploadFiles()">Upload</button>
+    <button onclick="downloadFolder()">Download Folder</button>
+    <ul id="uploadedFileList"></ul>
+
+    <script>
+        let port = 3000;
+
+        async function listItems() {
+            const response = await fetch(`http://localhost:${port}/files`);
+            const files = await response.json();
+            let uploadedFileList = document.getElementById('uploadedFileList');
+            uploadedFileList.innerHTML = "";
+
+            files.forEach(file => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="http://localhost:${port}/downloads/${encodeURIComponent(file)}" target="_blank">${file}</a>`;
+                uploadedFileList.appendChild(li);
+            });
+        }
+
+        async function uploadFiles() {
+            let input = document.getElementById('fileInput');
+
+            let files = input.files;
+            if (files.length === 0) {
+                alert('Select some files!');
+                return;
+            }
+
+            const formData = new FormData();
+            for (const file of files) {
+                formData.append('files', file);
+            }
+
+            const response = await fetch(`http://localhost:${port}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                alert('Files uploaded successfully!');
+                listItems();
+            } else {
+                alert('Error uploading files!');
+            }
+        }
+
+        async function downloadFolder() {
+            const response = await fetch(`http://localhost:${port}/downloadDir`);
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'uploads.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } else {
+                alert("Error downloading folder");
+            }
+        }
+
+        listItems();
+    </script>
+</body>
+
+</html>
